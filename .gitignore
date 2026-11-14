@@ -1,0 +1,5 @@
+node_modules/
+*.pem
+*.crx
+.e2e/
+E2E_REPORT.md

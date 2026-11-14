@@ -1,0 +1,35 @@
+{
+  "name": "agent-tabs",
+  "version": "0.1.0",
+  "description": "Let AI agents (MCP) and a CLI manage Chrome tabs and tab groups over native messaging. Local only.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "agent-tabs": "bin/agent-tabs.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "extension",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "chrome",
+    "tabs",
+    "tab-groups",
+    "mcp",
+    "native-messaging",
+    "cli"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "e2e": "node scripts/e2e.mjs"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2"
+  }
+}
