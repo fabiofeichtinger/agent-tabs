@@ -2,7 +2,7 @@
 // the MCP server and the native host.
 import { readFileSync } from 'node:fs';
 
-export const HOST_NAME = 'com.grokbot.tabs';
+export const HOST_NAME = 'com.agenttabs.host';
 
 // Derived from the public key in extension/manifest.json ("key"). A Chrome Web
 // Store release gets its own ID, which must be added to allowed_origins.
@@ -13,8 +13,8 @@ export const VERSION = JSON.parse(
 ).version;
 
 export const NOT_CONNECTED_MESSAGE =
-  'grok-tabs: Chrome extension not connected. Is Chrome running with the grok-tabs ' +
-  'extension installed? Run `grok-tabs doctor`.';
+  'agent-tabs: Chrome extension not connected. Is Chrome running with the agent-tabs ' +
+  'extension installed? Run `agent-tabs doctor`.';
 
 // Chrome limits: 1 MB per message host -> extension, 64 MB extension -> host.
 export const MAX_TO_EXTENSION = 1024 * 1024;

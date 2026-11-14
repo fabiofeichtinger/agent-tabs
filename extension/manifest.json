@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "grok-tabs",
+  "name": "agent-tabs",
   "version": "0.1.0",
   "description": "Lets local AI agents and a CLI list, group, move, open and close tabs via native messaging.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4iAgqVlervBL0eucluF/s8MI83HgFL6iSiqQR1YkQ53aGWN7ewsyEo6jj3MwMeV84DUeW1XZNuokzMFPvgSGxmF3FiknEVk05sDp/8Jl/UG2OdbyLu6385ZG8Db0O64aeG4Qyel6mxHtSH64tDvfdvF2C1d9wq3vQU9L+dMrse+Y4AsU9V1h3yjNuUZ/5YyAlbXMh33wbOy4LxellEt+g+OgGlkMMu/1GAbv8en0qMZ0mUgOvnpKpxOlTPa5QDklPaRacnCIGc4Cpfj/RIHgjyro2KuahtpztHKL8eyYSk9QP4Hei2/XAdAgZ8fFaCtwLokbXH+9oXJpXIgSyF1JIwIDAQAB",

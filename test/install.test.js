@@ -8,7 +8,7 @@ import { checkManifest, install, launcherScript, uninstall } from '../src/instal
 
 test('install writes an executable launcher and a valid manifest into --target-dir', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-install-'));
-  process.env.GROK_TABS_HOME = path.join(tmp, 'home');
+  process.env.AGENT_TABS_HOME = path.join(tmp, 'home');
   const target = path.join(tmp, 'NativeMessagingHosts');
 
   const res = install({ targetDirs: [target] });

@@ -1,23 +1,23 @@
-// Filesystem locations used by grok-tabs.
+// Filesystem locations used by agent-tabs.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-// Where `install` puts the launcher script. Override with GROK_TABS_HOME.
+// Where `install` puts the launcher script. Override with AGENT_TABS_HOME.
 export function homeDir() {
-  return process.env.GROK_TABS_HOME || path.join(os.homedir(), '.grok-tabs');
+  return process.env.AGENT_TABS_HOME || path.join(os.homedir(), '.agent-tabs');
 }
 
 // Directory holding the per-browser Unix sockets. Prefer XDG_RUNTIME_DIR
-// (tmpfs, per-user, 0700 on systemd systems); otherwise ~/.grok-tabs/run.
+// (tmpfs, per-user, 0700 on systemd systems); otherwise ~/.agent-tabs/run.
 export function runDir() {
-  if (process.env.GROK_TABS_RUN_DIR) return process.env.GROK_TABS_RUN_DIR;
-  if (process.env.XDG_RUNTIME_DIR) return path.join(process.env.XDG_RUNTIME_DIR, 'grok-tabs');
+  if (process.env.AGENT_TABS_RUN_DIR) return process.env.AGENT_TABS_RUN_DIR;
+  if (process.env.XDG_RUNTIME_DIR) return path.join(process.env.XDG_RUNTIME_DIR, 'agent-tabs');
   return path.join(homeDir(), 'run');
 }
 
 export function launcherPath() {
-  return path.join(homeDir(), 'grok-tabs-host');
+  return path.join(homeDir(), 'agent-tabs-host');
 }
 
 // Create the run dir with mode 0700 and refuse to use one that another user
@@ -41,10 +41,10 @@ export function socketPathFor(pid = process.pid) {
 // environment than the client (e.g. a desktop MCP client launched without
 // XDG_RUNTIME_DIR), so look in both the XDG and the home fallback location.
 export function searchDirs() {
-  if (process.env.GROK_TABS_RUN_DIR) return [process.env.GROK_TABS_RUN_DIR];
+  if (process.env.AGENT_TABS_RUN_DIR) return [process.env.AGENT_TABS_RUN_DIR];
   const dirs = [runDir(), path.join(homeDir(), 'run')];
   if (!process.env.XDG_RUNTIME_DIR && typeof process.getuid === 'function') {
-    dirs.push(path.join('/run/user', String(process.getuid()), 'grok-tabs'));
+    dirs.push(path.join('/run/user', String(process.getuid()), 'agent-tabs'));
   }
   return [...new Set(dirs)];
 }

@@ -1,4 +1,4 @@
-// grok-tabs service worker.
+// agent-tabs service worker.
 //
 // Opens a native messaging port to the local host and answers requests by
 // calling chrome.tabs / chrome.tabGroups / chrome.windows. An open native port
@@ -6,7 +6,7 @@
 // exponential backoff. If the worker is terminated anyway, it reconnects the
 // next time Chrome starts it (browser startup, install, or a tab event).
 
-const HOST_NAME = 'com.grokbot.tabs';
+const HOST_NAME = 'com.agenttabs.host';
 const VERSION = chrome.runtime.getManifest().version;
 const COLORS = ['grey', 'blue', 'red', 'yellow', 'green', 'pink', 'purple', 'cyan', 'orange'];
 const MIN_BACKOFF_MS = 1000;
@@ -23,7 +23,7 @@ function connect() {
   try {
     port = chrome.runtime.connectNative(HOST_NAME);
   } catch (err) {
-    console.warn('grok-tabs: connectNative failed:', err);
+    console.warn('agent-tabs: connectNative failed:', err);
     scheduleReconnect();
     return;
   }
@@ -31,7 +31,7 @@ function connect() {
   port.onMessage.addListener(onMessage);
   port.onDisconnect.addListener(() => {
     const reason = chrome.runtime.lastError?.message || 'disconnected';
-    console.warn('grok-tabs: native host disconnected:', reason);
+    console.warn('agent-tabs: native host disconnected:', reason);
     port = null;
     // A port that stayed up for a while was healthy; start backoff over.
     if (Date.now() - connectedAt > 10000) backoffMs = MIN_BACKOFF_MS;

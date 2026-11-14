@@ -49,7 +49,7 @@ export class Connection {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id);
-        reject(new Error(`grok-tabs: request "${method}" timed out after ${timeoutMs} ms`));
+        reject(new Error(`agent-tabs: request "${method}" timed out after ${timeoutMs} ms`));
       }, timeoutMs);
       this.pending.set(id, { resolve, reject, timer });
       this.sock.write(encodeLine({ id, method, params }));
@@ -79,10 +79,10 @@ export class Connection {
   }
 }
 
-// Connect to an explicit socket (--socket / GROK_TABS_SOCKET) or to the most
+// Connect to an explicit socket (--socket / AGENT_TABS_SOCKET) or to the most
 // recently started host. Sockets nobody listens on are left over from crashed
 // hosts and get removed.
-export async function connect({ socket = process.env.GROK_TABS_SOCKET } = {}) {
+export async function connect({ socket = process.env.AGENT_TABS_SOCKET } = {}) {
   const candidates = socket ? [socket] : listSockets();
   let lastErr;
   for (const p of candidates) {

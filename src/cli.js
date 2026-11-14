@@ -7,9 +7,9 @@ import { checkManifest, install, knownBrowsers, uninstall } from './install.js';
 import { validateParams } from './ops.js';
 import { launcherPath, listSockets, runDir } from './paths.js';
 
-const USAGE = `grok-tabs ${VERSION}: manage Chrome tabs from the CLI and MCP clients
+const USAGE = `agent-tabs ${VERSION}: manage Chrome tabs from the CLI and MCP clients
 
-Usage: grok-tabs <command> [options]
+Usage: agent-tabs <command> [options]
 
 Tabs and groups:
   list-tabs [--window ID]                       List tabs in all windows
@@ -260,7 +260,7 @@ async function cmdDoctor(v) {
     launcherOk = !nodeInScript || fs.existsSync(nodeInScript);
     add(launcherOk, `launcher ${launcher}`, launcherOk ? '' : `node binary ${nodeInScript} no longer exists; re-run install`);
   } catch {
-    add(false, `launcher ${launcher}`, 'missing; run `grok-tabs install`');
+    add(false, `launcher ${launcher}`, 'missing; run `agent-tabs install`');
   }
 
   let manifests = 0;
@@ -272,7 +272,7 @@ async function cmdDoctor(v) {
     const file = `${b.manifestDir}/${HOST_NAME}.json`;
     if (!fs.existsSync(file)) {
       if (b.required) add(false, `${b.name}: ${file}`, 'missing');
-      else if (fs.existsSync(b.configDir)) add(null, `${b.name}: no host manifest`, `run \`grok-tabs install --browser ${b.name}\``);
+      else if (fs.existsSync(b.configDir)) add(null, `${b.name}: no host manifest`, `run \`agent-tabs install --browser ${b.name}\``);
       continue;
     }
     manifests++;
@@ -281,7 +281,7 @@ async function cmdDoctor(v) {
   }
   // Downgraded to a warning below if the extension connects anyway (system-wide
   // or --user-data-dir manifests are not in the per-user dirs we know about).
-  const noManifest = manifests ? null : checks[checks.push({ ok: false, label: 'host manifest', detail: 'none found in per-user browser dirs; run `grok-tabs install`' }) - 1];
+  const noManifest = manifests ? null : checks[checks.push({ ok: false, label: 'host manifest', detail: 'none found in per-user browser dirs; run `agent-tabs install`' }) - 1];
 
   const dir = runDir();
   try {
@@ -371,7 +371,7 @@ export async function main(argv) {
     }
 
     const spec = TAB_COMMANDS[cmd];
-    if (!spec) throw new UsageError(`unknown command "${rawCmd}". Run \`grok-tabs help\`.`);
+    if (!spec) throw new UsageError(`unknown command "${rawCmd}". Run \`agent-tabs help\`.`);
     const { values: v, positionals } = parse(rest, spec.options);
     json = Boolean(v.json);
     if (v.help) {
@@ -405,7 +405,7 @@ export async function main(argv) {
     return 0;
   } catch (err) {
     const code = err instanceof NotConnectedError ? 3 : err instanceof UsageError || err.code?.startsWith?.('ERR_PARSE_ARGS') ? 2 : 1;
-    const message = err.message.startsWith('grok-tabs:') ? err.message : `grok-tabs: ${err.message}`;
+    const message = err.message.startsWith('agent-tabs:') ? err.message : `agent-tabs: ${err.message}`;
     if (json) console.log(JSON.stringify({ error: { code: err.code ?? 'EUSAGE', message } }, null, 2));
     console.error(message);
     return code;

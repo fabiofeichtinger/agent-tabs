@@ -1,11 +1,11 @@
 {
-  "name": "grok-tabs",
+  "name": "agent-tabs",
   "version": "0.1.0",
   "description": "Let AI agents (MCP) and a CLI manage Chrome tabs and tab groups over native messaging. Local only.",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "grok-tabs": "bin/grok-tabs.js"
+    "agent-tabs": "bin/agent-tabs.js"
   },
   "files": [
     "bin",

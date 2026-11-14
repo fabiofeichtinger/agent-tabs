@@ -10,7 +10,7 @@ import { OPERATIONS, OPERATIONS_BY_NAME, validateParams } from './ops.js';
 export const PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 
 const INSTRUCTIONS =
-  'grok-tabs manages the tabs and tab groups of the user\'s running Chrome. Tab and group IDs come from ' +
+  'agent-tabs manages the tabs and tab groups of the user\'s running Chrome. Tab and group IDs come from ' +
   'list_tabs / list_groups and change when the browser restarts. close_tabs is a dry run unless confirm is true: ' +
   'show the preview to the user and only confirm when they agree.';
 
@@ -37,7 +37,7 @@ export function createMcpServer({ write, call = defaultCall }) {
       return {
         protocolVersion: PROTOCOL_VERSIONS.includes(requested) ? requested : PROTOCOL_VERSIONS[0],
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: 'grok-tabs', version: VERSION },
+        serverInfo: { name: 'agent-tabs', version: VERSION },
         instructions: INSTRUCTIONS,
       };
     },

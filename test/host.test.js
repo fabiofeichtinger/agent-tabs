@@ -14,9 +14,9 @@ const ORIGIN = 'chrome-extension://fafpncbnpnoipmnfnpcpaopookpogfii/';
 
 async function startHost() {
   const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-host-'));
-  process.env.GROK_TABS_RUN_DIR = runDir;
-  const child = spawn(process.execPath, ['bin/grok-tabs.js', 'host', ORIGIN], {
-    env: { ...process.env, GROK_TABS_RUN_DIR: runDir },
+  process.env.AGENT_TABS_RUN_DIR = runDir;
+  const child = spawn(process.execPath, ['bin/agent-tabs.js', 'host', ORIGIN], {
+    env: { ...process.env, AGENT_TABS_RUN_DIR: runDir },
     stdio: ['pipe', 'pipe', 'pipe'],
   });
   const socketPath = path.join(runDir, `host-${child.pid}.sock`);
@@ -63,7 +63,7 @@ test('host relays requests, serves status, and cleans up on stdin close', async 
 
 test('stale sockets from crashed hosts are skipped and removed', async () => {
   const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-stale-'));
-  process.env.GROK_TABS_RUN_DIR = runDir;
+  process.env.AGENT_TABS_RUN_DIR = runDir;
   const stale = path.join(runDir, 'host-999999.sock');
   // A listener killed with SIGKILL leaves its socket file behind.
   const child = spawn(process.execPath, ['-e', `require('net').createServer().listen(${JSON.stringify(stale)}, () => console.log('up'))`]);
@@ -71,6 +71,6 @@ test('stale sockets from crashed hosts are skipped and removed', async () => {
   child.kill('SIGKILL');
   await new Promise((r) => child.on('exit', r));
   assert.ok(fs.existsSync(stale));
-  await assert.rejects(connect(), (err) => err instanceof NotConnectedError && /Run `grok-tabs doctor`/.test(err.message));
+  await assert.rejects(connect(), (err) => err instanceof NotConnectedError && /Run `agent-tabs doctor`/.test(err.message));
   assert.equal(fs.existsSync(stale), false);
 });

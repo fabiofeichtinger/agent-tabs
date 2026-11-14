@@ -14,7 +14,7 @@ import { ensurePrivateDir, runDir, socketPathFor } from './paths.js';
 const REQUEST_TIMEOUT_MS = 30000;
 
 function log(...args) {
-  process.stderr.write(`[grok-tabs host ${process.pid}] ${args.join(' ')}\n`);
+  process.stderr.write(`[agent-tabs host ${process.pid}] ${args.join(' ')}\n`);
 }
 
 export function runHost({ origin = null, stdin = process.stdin, stdout = process.stdout } = {}) {

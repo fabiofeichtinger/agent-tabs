@@ -17,7 +17,7 @@ test('initialize negotiates the protocol version', async () => {
   const { rpc } = harness();
   let r = await rpc({ id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {} } });
   assert.equal(r.result.protocolVersion, '2025-06-18');
-  assert.equal(r.result.serverInfo.name, 'grok-tabs');
+  assert.equal(r.result.serverInfo.name, 'agent-tabs');
   assert.ok(r.result.capabilities.tools);
   r = await rpc({ id: 2, method: 'initialize', params: { protocolVersion: '1999-01-01' } });
   assert.match(r.result.protocolVersion, /^\d{4}-\d{2}-\d{2}$/);
@@ -73,10 +73,10 @@ test('close_tabs without confirm passes confirm through as absent and labels the
   assert.match(r.result.content[0].text, /^Dry run: nothing was closed/);
 });
 
-test('real `grok-tabs mcp` process reports not-connected as a tool error', async () => {
+test('real `agent-tabs mcp` process reports not-connected as a tool error', async () => {
   const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-mcp-'));
-  const child = spawn(process.execPath, ['bin/grok-tabs.js', 'mcp'], {
-    env: { ...process.env, GROK_TABS_RUN_DIR: runDir, GROK_TABS_SOCKET: '' },
+  const child = spawn(process.execPath, ['bin/agent-tabs.js', 'mcp'], {
+    env: { ...process.env, AGENT_TABS_RUN_DIR: runDir, AGENT_TABS_SOCKET: '' },
     stdio: ['pipe', 'pipe', 'inherit'],
   });
   const lines = [];

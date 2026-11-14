@@ -11,8 +11,8 @@ store release later.
   manifest in the uploaded package (the store rejects or ignores it) and note the new ID.
 - Add the store ID to `allowed_origins` next to the dev ID:
   - code: add it to the default list in `src/constants.js` / `src/install.js`
-  - users today: `grok-tabs install --extension-id fafpncbnpnoipmnfnpcpaopookpogfii --extension-id <store-id>`
-- `grok-tabs doctor` should then accept either ID.
+  - users today: `agent-tabs install --extension-id fafpncbnpnoipmnfnpcpaopookpogfii --extension-id <store-id>`
+- `agent-tabs doctor` should then accept either ID.
 
 ## Permission justifications (for the store listing)
 
@@ -20,7 +20,7 @@ store release later.
 |---|---|
 | `tabs` | Read tab titles and URLs so the local CLI / AI agent can list and find tabs; create, move, activate and close tabs on request. |
 | `tabGroups` | List, create, rename, recolor, collapse and expand tab groups on request. |
-| `nativeMessaging` | The only channel to the locally installed grok-tabs helper. No network communication. |
+| `nativeMessaging` | The only channel to the locally installed agent-tabs helper. No network communication. |
 
 No host permissions, no content scripts, no remote code. Single purpose: "manage
 tabs and tab groups from a local command-line tool or AI agent".
@@ -59,13 +59,13 @@ offering the extension.
 
 ## Packaging the helper (later)
 
-- npm: `npm install -g grok-tabs && grok-tabs install` already works from a published
+- npm: `npm install -g agent-tabs && agent-tabs install` already works from a published
   package (no runtime deps). The launcher bakes in the absolute node path.
-- Homebrew formula: depend on `node`, run `grok-tabs install` in `post_install` or
+- Homebrew formula: depend on `node`, run `agent-tabs install` in `post_install` or
   print a caveat telling users to run it (Homebrew discourages writing to `~`).
 - macOS `.pkg` / Linux `.deb`: install the system-wide manifest
   (`/Library/Google/Chrome/NativeMessagingHosts/`, `/etc/opt/chrome/native-messaging-hosts/`,
-  `/etc/chromium/native-messaging-hosts/`) with a launcher under `/usr/local/lib/grok-tabs`,
+  `/etc/chromium/native-messaging-hosts/`) with a launcher under `/usr/local/lib/agent-tabs`,
   plus the External Extensions file above.
 - Consider bundling a single-file executable (Node SEA) so the host does not depend on
   the user's Node install.

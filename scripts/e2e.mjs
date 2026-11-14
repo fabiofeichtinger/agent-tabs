@@ -17,15 +17,15 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const CLI = path.join(ROOT, 'bin', 'grok-tabs.js');
+const CLI = path.join(ROOT, 'bin', 'agent-tabs.js');
 const EXTENSION_ID = 'fafpncbnpnoipmnfnpcpaopookpogfii';
-const NOT_CONNECTED = 'grok-tabs: Chrome extension not connected. Is Chrome running with the grok-tabs extension installed? Run `grok-tabs doctor`.';
+const NOT_CONNECTED = 'agent-tabs: Chrome extension not connected. Is Chrome running with the agent-tabs extension installed? Run `agent-tabs doctor`.';
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-tabs-e2e-'));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-tabs-e2e-'));
 const profile = path.join(tmp, 'profile');
 const nmhDir = path.join(profile, 'NativeMessagingHosts');
-const env = { ...process.env, GROK_TABS_HOME: path.join(tmp, 'home'), GROK_TABS_RUN_DIR: path.join(tmp, 'run') };
-delete env.GROK_TABS_SOCKET;
+const env = { ...process.env, AGENT_TABS_HOME: path.join(tmp, 'home'), AGENT_TABS_RUN_DIR: path.join(tmp, 'run') };
+delete env.AGENT_TABS_SOCKET;
 
 const transcript = [];
 const log = (s = '') => {
@@ -51,7 +51,7 @@ function cli(args, { quiet = false } = {}) {
     execFile(process.execPath, [CLI, ...args], { env, timeout: 30000 }, (err, stdout, stderr) => {
       const code = err ? (typeof err.code === 'number' ? err.code : 1) : 0;
       if (!quiet) {
-        log(`$ grok-tabs ${args.join(' ')}`);
+        log(`$ agent-tabs ${args.join(' ')}`);
         if (stdout.trim()) log(abridge(stdout));
         if (stderr.trim()) log(`[stderr] ${abridge(stderr)}`);
         log(`[exit ${code}]\n`);
@@ -65,7 +65,7 @@ function cli(args, { quiet = false } = {}) {
 
 async function ok(args) {
   const r = await cli(args);
-  assert.equal(r.code, 0, `grok-tabs ${args.join(' ')} failed: ${r.stderr}`);
+  assert.equal(r.code, 0, `agent-tabs ${args.join(' ')} failed: ${r.stderr}`);
   return r.json;
 }
 
@@ -124,7 +124,7 @@ async function killBrowser() {
   clearTimeout(t);
 }
 
-// URLs of real page targets according to the browser itself (not grok-tabs).
+// URLs of real page targets according to the browser itself (not agent-tabs).
 async function oracleUrls() {
   const port = fs.readFileSync(path.join(profile, 'DevToolsActivePort'), 'utf8').split('\n')[0];
   const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
@@ -137,7 +137,7 @@ async function tabs() {
 
 async function main() {
   const bin = findBrowser();
-  log(`grok-tabs e2e  ${new Date().toISOString()}`);
+  log(`agent-tabs e2e  ${new Date().toISOString()}`);
   log(`node ${process.version}, browser ${bin}`);
   log(`browser version: ${spawnSync(bin, ['--version'], { encoding: 'utf8' }).stdout.trim()}`);
   log(`temp dir ${tmp}\n`);
@@ -146,7 +146,7 @@ async function main() {
 
   await step('install native host manifest into the profile dir', async () => {
     const res = await ok(['install', '--target-dir', nmhDir, '--json']);
-    assert.equal(res.written[0].file, path.join(nmhDir, 'com.grokbot.tabs.json'));
+    assert.equal(res.written[0].file, path.join(nmhDir, 'com.agenttabs.host.json'));
     assert.deepEqual(res.manifest.allowed_origins, [`chrome-extension://${EXTENSION_ID}/`]);
     log(fs.readFileSync(res.written[0].file, 'utf8'));
     log(fs.readFileSync(res.launcher, 'utf8'));
@@ -158,7 +158,7 @@ async function main() {
     assert.equal(r.stderr.trim(), NOT_CONNECTED);
   });
 
-  await step('launch browser and wait for `grok-tabs status`', async () => {
+  await step('launch browser and wait for `agent-tabs status`', async () => {
     launchBrowser(bin);
     const s = await waitFor('extension to connect', async () => {
       const r = await cli(['status', '--json'], { quiet: true });
@@ -328,7 +328,7 @@ async function main() {
 
   await step('MCP with the official SDK client', async () => {
     const transport = new StdioClientTransport({ command: process.execPath, args: [CLI, 'mcp'], env, stderr: 'inherit' });
-    const client = new Client({ name: 'grok-tabs-e2e', version: '0.0.0' });
+    const client = new Client({ name: 'agent-tabs-e2e', version: '0.0.0' });
     await client.connect(transport); // initialize + notifications/initialized
     log(`MCP initialize -> server ${JSON.stringify(client.getServerVersion())}, protocol ${transport._protocolVersion ?? '(negotiated)'}`);
     await client.ping();
@@ -383,7 +383,7 @@ async function main() {
     assert.equal(r.json.error.code, 'ENOTCONNECTED');
 
     const transport = new StdioClientTransport({ command: process.execPath, args: [CLI, 'mcp'], env, stderr: 'inherit' });
-    const client = new Client({ name: 'grok-tabs-e2e', version: '0.0.0' });
+    const client = new Client({ name: 'agent-tabs-e2e', version: '0.0.0' });
     await client.connect(transport);
     const res = await client.callTool({ name: 'list_tabs', arguments: {} });
     log(`MCP tools/call list_tabs while disconnected -> isError=${res.isError} "${res.content[0].text}"`);
@@ -394,7 +394,7 @@ async function main() {
 
   await step('uninstall', async () => {
     await ok(['uninstall', '--target-dir', nmhDir]);
-    assert.equal(fs.existsSync(path.join(nmhDir, 'com.grokbot.tabs.json')), false);
+    assert.equal(fs.existsSync(path.join(nmhDir, 'com.agenttabs.host.json')), false);
   });
 
   log(`ALL ${steps.length} STEPS PASSED`);
