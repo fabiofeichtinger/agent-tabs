@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="brand/logo.svg" alt="agent-tabs logo" width="96" height="96">
+</p>
+
 # agent-tabs
 
 Let AI agents (any MCP client) and your shell list, group, move, open, focus and
