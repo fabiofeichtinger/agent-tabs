@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { DEFAULT_EXTENSION_ID, HOST_NAME } from '../src/constants.js';
-import { checkManifest, install, launcherScript, uninstall } from '../src/install.js';
+import { checkManifest, install, launcherScript, stableNodePath, uninstall } from '../src/install.js';
 
 test('install writes an executable launcher and a valid manifest into --target-dir', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-install-'));
@@ -21,7 +21,7 @@ test('install writes an executable launcher and a valid manifest into --target-d
   assert.ok(path.isAbsolute(manifest.path));
   assert.deepEqual(manifest.allowed_origins, [`chrome-extension://${DEFAULT_EXTENSION_ID}/`]);
   assert.ok(fs.statSync(manifest.path).mode & 0o100);
-  assert.match(fs.readFileSync(manifest.path, 'utf8'), new RegExp(`exec '${process.execPath}'`));
+  assert.match(fs.readFileSync(manifest.path, 'utf8'), new RegExp(`exec '${stableNodePath()}'`));
   assert.equal(checkManifest(file).ok, true);
   assert.equal(checkManifest(file, 'abcdefghijklmnopabcdefghijklmnop').ok, false);
 
@@ -38,4 +38,46 @@ test('launcher script quotes paths safely', () => {
   const s = launcherScript("/opt/no'de/bin/node", '/x y/cli.js');
   assert.match(s, /^#!\/bin\/sh/);
   assert.ok(s.includes(`exec '/opt/no'\\''de/bin/node' '/x y/cli.js' host "$@"`));
+});
+
+// Fake Homebrew prefix: <prefix>/Cellar/node@24/24.14.0_1/bin/node, plus an
+// opt/node@24 symlink to `optTarget` (relative to the prefix) unless null.
+function fakeBrew(optTarget) {
+  const prefix = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-brew-'));
+  for (const v of ['24.14.0_1', '24.15.0']) {
+    fs.mkdirSync(path.join(prefix, 'Cellar/node@24', v, 'bin'), { recursive: true });
+    fs.writeFileSync(path.join(prefix, 'Cellar/node@24', v, 'bin/node'), '');
+  }
+  if (optTarget) {
+    fs.mkdirSync(path.join(prefix, 'opt'));
+    fs.symlinkSync(path.join('..', optTarget), path.join(prefix, 'opt/node@24'));
+  }
+  return { prefix, cellarNode: path.join(prefix, 'Cellar/node@24/24.14.0_1/bin/node') };
+}
+
+test('stableNodePath prefers the Homebrew opt link when it resolves to the same node', () => {
+  const { prefix, cellarNode } = fakeBrew('Cellar/node@24/24.14.0_1');
+  assert.equal(stableNodePath(cellarNode), path.join(prefix, 'opt/node@24/bin/node'));
+});
+
+test('stableNodePath keeps the Cellar path when the opt link is missing', () => {
+  const { cellarNode } = fakeBrew(null);
+  assert.equal(stableNodePath(cellarNode), cellarNode);
+});
+
+test('stableNodePath keeps the Cellar path when the opt link points elsewhere', () => {
+  const { cellarNode } = fakeBrew('Cellar/node@24/24.15.0');
+  assert.equal(stableNodePath(cellarNode), cellarNode);
+});
+
+test('stableNodePath leaves non-Homebrew paths unchanged', () => {
+  assert.equal(stableNodePath('/usr/local/bin/node'), '/usr/local/bin/node');
+  assert.equal(stableNodePath('/home/u/.nvm/versions/node/v24.14.0/bin/node'), '/home/u/.nvm/versions/node/v24.14.0/bin/node');
+});
+
+test('install bakes nodePath into the launcher', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-install-'));
+  process.env.AGENT_TABS_HOME = path.join(tmp, 'home');
+  const res = install({ targetDirs: [path.join(tmp, 'NMH')], nodePath: '/custom/bin/node' });
+  assert.ok(fs.readFileSync(res.launcher, 'utf8').includes(`exec '/custom/bin/node' `));
 });

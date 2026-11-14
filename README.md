@@ -92,7 +92,10 @@ directory of every supported browser whose config directory exists:
 The manifest's `path` points to a small launcher (`~/.agent-tabs/agent-tabs-host`)
 that hardcodes the absolute path of the `node` binary used at install time, because
 Chrome starts native hosts without your shell's `PATH`. Re-run `agent-tabs install`
-if you move the checkout or switch Node versions.
+if you move the checkout or switch Node versions. For Homebrew Node, install records
+the stable `<prefix>/opt/<formula>/bin/node` link instead of the versioned `Cellar`
+path, so `brew upgrade` does not break the launcher. Use `--node PATH` to pick a
+different binary.
 
 Options:
 
@@ -100,6 +103,7 @@ Options:
 agent-tabs install --browser brave --browser chromium     # force specific browsers (creates dirs)
 agent-tabs install --extension-id <id> [--extension-id <id2>]   # e.g. a Web Store build
 agent-tabs install --target-dir /path/to/profile/NativeMessagingHosts
+agent-tabs install --node /usr/local/bin/node   # node binary baked into the launcher
 agent-tabs install --dry-run
 agent-tabs uninstall [--target-dir DIR]
 ```
