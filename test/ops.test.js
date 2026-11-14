@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { OPERATIONS, checkUrl, validateParams } from '../src/ops.js';
+import { OPERATIONS, OPERATIONS_BY_NAME, checkUrl, validateParams } from '../src/ops.js';
 
 test('every operation has an object input schema', () => {
   for (const op of OPERATIONS) {
@@ -33,4 +33,12 @@ test('validateParams rejects bad input', () => {
   assert.throws(() => validateParams('focus_tab', { tabId: 1, extra: true }), /unknown parameter/);
   assert.throws(() => validateParams('open_url', { url: 'javascript:alert(1)' }), /refusing/);
   assert.throws(() => validateParams('nope', {}), /unknown operation/);
+});
+
+test('close_tabs takes exactly one of tabIds or groupId and says to get approval', () => {
+  assert.deepEqual(validateParams('close_tabs', { groupId: 7, confirm: true }), { groupId: 7, confirm: true });
+  assert.deepEqual(validateParams('close_tabs', { tabIds: [1] }), { tabIds: [1] });
+  assert.throws(() => validateParams('close_tabs', { confirm: true }), /exactly one/);
+  assert.throws(() => validateParams('close_tabs', { tabIds: [1], groupId: 7 }), /exactly one/);
+  assert.match(OPERATIONS_BY_NAME.get('close_tabs').description, /explicit approval/);
 });

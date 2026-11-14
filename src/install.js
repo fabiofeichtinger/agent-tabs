@@ -22,6 +22,8 @@ const BROWSERS = {
     edge: 'Microsoft Edge',
     'edge-beta': 'Microsoft Edge Beta',
     'edge-dev': 'Microsoft Edge Dev',
+    arc: 'Arc/User Data',
+    vivaldi: 'Vivaldi',
   },
   linux: {
     chrome: 'google-chrome',
@@ -34,6 +36,7 @@ const BROWSERS = {
     edge: 'microsoft-edge',
     'edge-beta': 'microsoft-edge-beta',
     'edge-dev': 'microsoft-edge-dev',
+    vivaldi: 'vivaldi',
   },
 };
 

@@ -103,16 +103,18 @@ export const OPERATIONS = [
   {
     name: 'close_tabs',
     description:
-      'Close tabs. Without confirm: true this is a dry run that only returns the tabs that would be closed. ' +
-      'Show the preview to the user before confirming.',
+      'DESTRUCTIVE: close tabs (tabIds) or every tab in a group (groupId). Closed tabs and unsaved page state are lost. ' +
+      'Without confirm: true this is a dry run that only returns the tabs that would close. ' +
+      'You MUST show that list to the user and get their explicit approval before calling again with confirm: true. ' +
+      'Never close tabs on your own initiative.',
     annotations: { destructiveHint: true },
     inputSchema: {
       type: 'object',
       properties: {
         tabIds: idList('Tabs to close.'),
-        confirm: { type: 'boolean', description: 'Must be true to actually close the tabs.' },
+        groupId: { ...id, description: 'Close every tab in this group instead of tabIds.' },
+        confirm: { type: 'boolean', description: 'Set to true only after the user explicitly approved closing these tabs.' },
       },
-      required: ['tabIds'],
       additionalProperties: false,
     },
   },
@@ -169,5 +171,8 @@ export function validateParams(name, params = {}) {
   const clean = Object.fromEntries(Object.entries(params ?? {}).filter(([, v]) => v !== undefined));
   check(op.inputSchema, clean, 'params');
   if (name === 'open_url') clean.url = checkUrl(clean.url);
+  if (name === 'close_tabs' && (clean.tabIds === undefined) === (clean.groupId === undefined)) {
+    throw new Error('close_tabs needs exactly one of tabIds or groupId');
+  }
   return clean;
 }

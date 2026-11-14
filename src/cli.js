@@ -19,9 +19,11 @@ Tabs and groups:
   update-group <groupId> [--title T] [--color C] [--collapse | --expand]
   ungroup <tabId...>                            Remove tabs from their group
   move-tabs <tabId...> (--index N | --end) [--window ID]
-  open-url <url> [--background] [--window ID] [--group ID]
+  open-url <url...> [--background] [--window ID] [--group ID | --title T --color C]
   focus-tab <tabId>                             Activate a tab and focus its window
-  close-tabs <tabId...> [--yes]                 Dry run unless --yes is given
+  close-tabs (<tabId...> | --group ID) [--confirm]
+                                                Dry run unless --confirm (or --yes) is given
+  rename <groupId> <title>                      Shortcut for update-group --title
 
 Setup:
   install [--extension-id ID]... [--browser NAME]... [--target-dir DIR]... [--dry-run]
@@ -96,12 +98,26 @@ const TAB_COMMANDS = {
   },
   'open-url': {
     op: 'open_url',
-    options: { background: { type: 'boolean' }, window: { type: 'string' }, group: { type: 'string' } },
+    options: { background: { type: 'boolean' }, window: { type: 'string' }, group: { type: 'string' }, title: { type: 'string' }, color: { type: 'string' } },
     params: (pos, v) => {
-      if (pos.length !== 1) throw new UsageError('expected exactly one URL');
-      return {
-        url: pos[0], active: v.background ? false : undefined, windowId: optInt(v.window, '--window'), groupId: optInt(v.group, '--group'),
-      };
+      if (!pos.length) throw new UsageError('expected at least one URL');
+      if (v.group !== undefined && (v.title !== undefined || v.color !== undefined)) {
+        throw new UsageError('use --group to join an existing group, or --title/--color to make a new one');
+      }
+      return pos.map((url) => ({
+        url, active: v.background ? false : undefined, windowId: optInt(v.window, '--window'), groupId: optInt(v.group, '--group'),
+      }));
+    },
+    // Several URLs and/or a new group: one open_url per URL, then group_tabs.
+    async run(list, v, opts) {
+      const tabs = [];
+      for (const p of list) tabs.push((await call('open_url', validateParams('open_url', p), opts)).tab);
+      let group;
+      if (v.title !== undefined || v.color !== undefined) {
+        const params = validateParams('group_tabs', { tabIds: tabs.map((t) => t.id), title: v.title, color: v.color });
+        group = (await call('group_tabs', params, opts)).group;
+      }
+      return { tabs, group };
     },
   },
   'focus-tab': {
@@ -114,12 +130,27 @@ const TAB_COMMANDS = {
   },
   'close-tabs': {
     op: 'close_tabs',
-    options: { yes: { type: 'boolean', short: 'y' } },
-    params: (pos, v) => ({ tabIds: needIds(pos), confirm: v.yes === true }),
+    options: { yes: { type: 'boolean', short: 'y' }, confirm: { type: 'boolean' }, group: { type: 'string' } },
+    params: (pos, v) => {
+      const confirm = v.yes === true || v.confirm === true;
+      if (v.group !== undefined) {
+        if (pos.length) throw new UsageError('pass tabIds or --group, not both');
+        return { groupId: toInt(v.group, '--group'), confirm };
+      }
+      return { tabIds: needIds(pos), confirm };
+    },
+  },
+  rename: {
+    op: 'update_group',
+    options: {},
+    params: (pos) => {
+      if (pos.length < 2) throw new UsageError('usage: rename <groupId> <title>');
+      return { groupId: toInt(pos[0], 'groupId'), title: pos.slice(1).join(' ') };
+    },
   },
 };
 
-const ALIASES = { tabs: 'list-tabs', groups: 'list-groups', group: 'group-tabs', move: 'move-tabs', open: 'open-url', focus: 'focus-tab', close: 'close-tabs' };
+const ALIASES = { list: 'list-tabs', tabs: 'list-tabs', groups: 'list-groups', group: 'group-tabs', move: 'move-tabs', open: 'open-url', focus: 'focus-tab', close: 'close-tabs' };
 
 // --- human-readable output -------------------------------------------------
 
@@ -160,7 +191,7 @@ function formatResult(op, r) {
       return `Focused:\n${tabLine(r.tab)}`;
     case 'close_tabs':
       return r.dryRun
-        ? `Dry run, nothing closed. These ${r.wouldClose.length} tab(s) would close:\n${r.wouldClose.map(tabLine).join('\n')}\nRe-run with --yes to close them.`
+        ? `Dry run, nothing closed. These ${r.wouldClose.length} tab(s) would close:\n${r.wouldClose.map(tabLine).join('\n')}\nRe-run with --confirm to close them.`
         : `Closed ${r.closed.length} tab(s):\n${r.closed.map(tabLine).join('\n')}`;
     default:
       return JSON.stringify(r, null, 2);
@@ -347,9 +378,25 @@ export async function main(argv) {
       console.log(USAGE);
       return 0;
     }
+    const callOpts = { socket: v.socket, timeoutMs: optInt(v.timeout, '--timeout') };
+    if (spec.run && (positionals.length > 1 || v.title !== undefined || v.color !== undefined)) {
+      let list;
+      try {
+        list = spec.params(positionals, v);
+        list.forEach((p) => validateParams(spec.op, p));
+      } catch (err) {
+        throw err instanceof UsageError ? err : new UsageError(err.message);
+      }
+      const r = await spec.run(list, v, callOpts);
+      if (json) console.log(JSON.stringify(r, null, 2));
+      else console.log(`Opened:\n${r.tabs.map(tabLine).join('\n')}${r.group ? `\nGroup:\n${groupLine(r.group)}` : ''}`);
+      return 0;
+    }
     let params;
     try {
-      params = validateParams(spec.op, spec.params(positionals, v));
+      let raw = spec.params(positionals, v);
+      if (Array.isArray(raw)) raw = raw[0];
+      params = validateParams(spec.op, raw);
     } catch (err) {
       throw err instanceof UsageError ? err : new UsageError(err.message);
     }

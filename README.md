@@ -59,8 +59,8 @@ macOS or Linux.
 ```sh
 git clone <repo-url> grok-tabs
 cd grok-tabs
-npm link                     # puts `grok-tabs` on your PATH (or use: node bin/grok-tabs.js ...)
-grok-tabs install            # writes the native host manifest + launcher
+./install.sh                 # writes the native host manifest + launcher (same as `node bin/grok-tabs.js install`)
+npm link                     # optional: puts `grok-tabs` on your PATH (or use: node bin/grok-tabs.js ...)
 ```
 
 Then load the extension:
@@ -80,6 +80,8 @@ directory of every supported browser whose config directory exists:
 | Chrome / Beta / Dev / Canary | `Google/Chrome[ Beta│ Dev│ Canary]` | `google-chrome[-beta│-unstable│-canary]` |
 | Chrome for Testing | `Google/Chrome for Testing` | `google-chrome-for-testing` |
 | Chromium | `Chromium` | `chromium` |
+| Arc | `Arc/User Data` | n/a |
+| Vivaldi | `Vivaldi` | `vivaldi` |
 | Brave | `BraveSoftware/Brave-Browser` | `BraveSoftware/Brave-Browser` |
 | Edge / Beta / Dev | `Microsoft Edge[ Beta│ Dev]` | `microsoft-edge[-beta│-dev]` |
 
@@ -109,7 +111,8 @@ grok-tabs uninstall [--target-dir DIR]
 ## Usage
 
 Every tab command accepts `--json` for machine-readable output, `--socket PATH` to
-pick a specific browser, and `--timeout MS`. Underscore names (`list_tabs`) work too.
+pick a specific browser, and `--timeout MS`. Underscore names (`list_tabs`) work too, as do the
+short aliases `list`, `groups`, `open`, `group`, `move`, `focus`, `close`.
 
 ```sh
 grok-tabs list-tabs                      # all windows; * = active, P = pinned
@@ -119,11 +122,13 @@ grok-tabs list-groups
 grok-tabs open-url https://example.com
 grok-tabs open-url https://example.org --background --group 7
 grok-tabs open-url about:blank --window 1570867542
+grok-tabs open https://a.example https://b.example --title Research --color purple   # several URLs into a new group
 
 grok-tabs group-tabs 101 102 --title Research --color blue     # new group
 grok-tabs group-tabs 103 --group 7                             # add to existing group
 grok-tabs update-group 7 --title Reading --color green --collapse
 grok-tabs update-group 7 --expand
+grok-tabs rename 7 Reading list                                # shortcut for update-group --title
 grok-tabs ungroup 101 102
 
 grok-tabs move-tabs 103 --index 0
@@ -131,7 +136,8 @@ grok-tabs move-tabs 103 104 --end --window 1570867600
 grok-tabs focus-tab 103                  # activates the tab and focuses its window
 
 grok-tabs close-tabs 101 102             # dry run: prints what WOULD close, closes nothing
-grok-tabs close-tabs 101 102 --yes       # actually closes
+grok-tabs close-tabs 101 102 --confirm   # actually closes (--yes / -y also work)
+grok-tabs close --group 7 --confirm      # close every tab in a group
 
 grok-tabs status                         # connected? which browser? ping
 grok-tabs doctor                         # checks node, launcher, manifests, socket, connection
@@ -202,7 +208,7 @@ claude mcp add grok-tabs -- /usr/local/bin/node /path/to/grok-tabs/bin/grok-tabs
 - **Minimal permissions.** `tabs`, `tabGroups`, `nativeMessaging`. No host permissions,
   no content scripts, no `scripting`, no `debugger`. The extension can see tab titles
   and URLs but **cannot read or modify page content**.
-- **Close confirmation.** `close_tabs` is a dry run unless `--yes` / `confirm: true`.
+- **Close confirmation.** `close_tabs` is a dry run unless `--confirm` (or `--yes`) / `confirm: true`; the MCP tool description tells the agent to show the preview and get the user's explicit approval first.
   This is enforced inside the extension too, so every socket client gets the same rule.
 - **URL allowlist** for `open_url`: http(s) and `about:blank` only.
 

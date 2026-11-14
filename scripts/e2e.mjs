@@ -101,6 +101,9 @@ function launchBrowser(bin) {
     // Chromium 137+ only honors --load-extension with this feature disabled.
     '--disable-features=DisableLoadExtensionCommandLineSwitch',
     `--load-extension=${path.join(ROOT, 'extension')}`,
+    // Test-only independent oracle: DevTools /json/list shows real page targets,
+    // so tab changes are checked without trusting the extension's own list.
+    '--remote-debugging-port=0',
     ...(process.env.E2E_BROWSER_FLAGS ? process.env.E2E_BROWSER_FLAGS.split(' ') : []),
     'about:blank',
   ];
@@ -119,6 +122,13 @@ async function killBrowser() {
   const t = setTimeout(() => { try { process.kill(-browser.pid, 'SIGKILL'); } catch {} }, 5000);
   await browserExited;
   clearTimeout(t);
+}
+
+// URLs of real page targets according to the browser itself (not grok-tabs).
+async function oracleUrls() {
+  const port = fs.readFileSync(path.join(profile, 'DevToolsActivePort'), 'utf8').split('\n')[0];
+  const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
+  return targets.filter((t) => t.type === 'page').map((t) => t.url);
 }
 
 async function tabs() {
@@ -270,6 +280,39 @@ async function main() {
     await ok(['list-tabs']);
   });
 
+  await step('short aliases: open several URLs into a new group, rename, close --group --confirm', async () => {
+    const before = (await tabs()).length;
+    const o = await ok(['open', 'https://example.com/a', 'https://example.org/b', '--background', '--title', 'Research', '--color', 'purple', '--json']);
+    assert.equal(o.tabs.length, 2);
+    assert.equal(o.group.title, 'Research');
+    assert.equal(o.group.color, 'purple');
+    assert.deepEqual([...o.group.tabIds].sort(), o.tabs.map((t) => t.id).sort());
+    const G = o.group.id;
+    const seen = await waitFor('oracle to see both tabs', async () => {
+      const u = await oracleUrls();
+      return u.includes('https://example.com/a') && u.includes('https://example.org/b') ? u : null;
+    }, 15000);
+    log(`oracle (DevTools /json/list) page URLs: ${seen.join(' | ')}`);
+    await ok(['rename', String(G), 'Reading', 'list']);
+    const listed = (await ok(['list', '--json'])).tabs.filter((t) => t.groupId === G);
+    assert.equal(listed.length, 2);
+    assert.ok(listed.every((t) => t.groupTitle === 'Reading list'));
+    const dry = await ok(['close', '--group', String(G), '--json']);
+    assert.equal(dry.dryRun, true);
+    assert.equal((await tabs()).length, before + 2, 'dry run closed nothing');
+    const done = await ok(['close', '--group', String(G), '--confirm', '--json']);
+    assert.equal(done.dryRun, false);
+    assert.equal(done.closed.length, 2);
+    await waitFor('group tabs to close', async () => ((await tabs()).length === before ? true : null), 5000);
+    const left = await waitFor('oracle to drop both tabs', async () => {
+      const u = await oracleUrls();
+      return !u.includes('https://example.com/a') && !u.includes('https://example.org/b') ? u : null;
+    }, 5000);
+    log(`oracle after close --group --confirm: ${left.join(' | ')}`);
+    const gone = (await ok(['list-groups', '--json'])).groups.find((g) => g.id === G);
+    assert.equal(gone, undefined);
+  });
+
   await step('native host crash -> extension reconnects with backoff', async () => {
     const before = (await cli(['status', '--json'], { quiet: true })).json;
     process.kill(before.pid, 'SIGKILL'); // leaves a stale socket file behind
@@ -305,6 +348,11 @@ async function main() {
     assert.match(preview.content[0].text, /^Dry run: nothing was closed/);
     assert.equal(preview.structuredContent.dryRun, true);
     assert.ok((await tabs()).some((t) => t.id === C.id), 'tab still open after MCP dry run');
+
+    const closeTool = tools.find((t) => t.name === 'close_tabs');
+    assert.match(closeTool.description, /explicit approval/);
+    const neither = await client.callTool({ name: 'close_tabs', arguments: { confirm: true } });
+    assert.equal(neither.isError, true, 'close_tabs without tabIds/groupId is rejected');
 
     const bad = await client.callTool({ name: 'open_url', arguments: { url: 'javascript:alert(1)' } });
     log(`tools/call open_url javascript: -> isError=${bad.isError} "${bad.content[0].text}"`);

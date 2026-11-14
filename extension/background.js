@@ -209,7 +209,14 @@ const HANDLERS = {
   // Enforced here as well as in the CLI/MCP layer: any client of the local
   // socket gets a dry run unless it explicitly sends confirm: true.
   async close_tabs(params) {
-    const tabs = await getTabs(ids(params.tabIds, 'tabIds'));
+    let tabIds;
+    if (params.groupId !== undefined) {
+      tabIds = (await chrome.tabs.query({ groupId: int(params.groupId, 'groupId') })).map((t) => t.id);
+      if (!tabIds.length) throw new Error(`no tabs in group ${params.groupId}`);
+    } else {
+      tabIds = ids(params.tabIds, 'tabIds');
+    }
+    const tabs = await getTabs(tabIds);
     if (params.confirm !== true) return { dryRun: true, wouldClose: tabs };
     await chrome.tabs.remove(tabs.map((t) => t.id));
     return { dryRun: false, closed: tabs };
