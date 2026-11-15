@@ -1,5 +1,6 @@
 // Command-line interface.
 import fs from 'node:fs';
+import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { call, connect, NotConnectedError } from './client.js';
 import { DEFAULT_EXTENSION_ID, HOST_NAME, VERSION } from './constants.js';
@@ -26,7 +27,8 @@ Tabs and groups:
   rename <groupId> <title>                      Shortcut for update-group --title
 
 Setup:
-  install [--extension-id ID]... [--browser NAME]... [--target-dir DIR]... [--dry-run]
+  install [--extension-id ID]... [--browser NAME]... [--target-dir DIR]... [--node PATH] [--dry-run]
+                                                --node: node binary for the launcher (default: this one)
   uninstall [--target-dir DIR]...
   doctor [--target-dir DIR]...                  Check installation and connection
   status                                        Is the extension connected?
@@ -202,7 +204,13 @@ function formatResult(op, r) {
 
 function cmdInstall(v) {
   const extensionIds = v['extension-id']?.length ? v['extension-id'] : [DEFAULT_EXTENSION_ID];
-  const res = install({ extensionIds, browsers: v.browser ?? [], targetDirs: v['target-dir'] ?? [], dryRun: v['dry-run'] });
+  const res = install({
+    extensionIds,
+    browsers: v.browser ?? [],
+    targetDirs: v['target-dir'] ?? [],
+    nodePath: v.node === undefined ? undefined : path.resolve(v.node),
+    dryRun: v['dry-run'],
+  });
   if (v.json) return console.log(JSON.stringify(res, null, 2));
   const verb = v['dry-run'] ? 'Would write' : 'Wrote';
   console.log(`${verb} launcher ${res.launcher}`);
@@ -355,6 +363,7 @@ export async function main(argv) {
         'extension-id': { type: 'string', multiple: true },
         browser: { type: 'string', multiple: true },
         'target-dir': { type: 'string', multiple: true },
+        node: { type: 'string' },
         'dry-run': { type: 'boolean' },
       });
       cmd === 'install' ? cmdInstall(v) : cmdUninstall(v);
