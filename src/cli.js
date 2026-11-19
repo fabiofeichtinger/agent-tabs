@@ -4,7 +4,7 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { call, connect, NotConnectedError } from './client.js';
 import { DEFAULT_EXTENSION_ID, HOST_NAME, VERSION } from './constants.js';
-import { checkManifest, install, knownBrowsers, uninstall } from './install.js';
+import { assertExecutableNode, checkManifest, install, knownBrowsers, uninstall } from './install.js';
 import { validateParams } from './ops.js';
 import { launcherPath, listSockets, runDir } from './paths.js';
 
@@ -208,7 +208,7 @@ function cmdInstall(v) {
     extensionIds,
     browsers: v.browser ?? [],
     targetDirs: v['target-dir'] ?? [],
-    nodePath: v.node === undefined ? undefined : path.resolve(v.node),
+    nodePath: v.node === undefined ? undefined : assertExecutableNode(path.resolve(v.node)),
     dryRun: v['dry-run'],
   });
   if (v.json) return console.log(JSON.stringify(res, null, 2));

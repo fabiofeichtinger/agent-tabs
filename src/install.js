@@ -79,6 +79,25 @@ export function stableNodePath(execPath = process.execPath) {
   return execPath;
 }
 
+// Validate a user-supplied --node path: it must exist, be a regular file (after
+// following symlinks) and be executable, or the launcher would fail only later,
+// when Chrome starts it.
+export function assertExecutableNode(nodePath) {
+  let st;
+  try {
+    st = fs.statSync(nodePath);
+  } catch {
+    throw new Error(`--node ${nodePath}: no such file`);
+  }
+  if (!st.isFile()) throw new Error(`--node ${nodePath}: not a regular file`);
+  try {
+    fs.accessSync(nodePath, fs.constants.X_OK);
+  } catch {
+    throw new Error(`--node ${nodePath}: not executable`);
+  }
+  return nodePath;
+}
+
 const shQuote = (s) => `'${s.replace(/'/g, `'\\''`)}'`;
 
 // Chrome launches the host without a login shell, so PATH may not contain

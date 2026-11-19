@@ -2,9 +2,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { DEFAULT_EXTENSION_ID, HOST_NAME } from '../src/constants.js';
-import { checkManifest, install, launcherScript, stableNodePath, uninstall } from '../src/install.js';
+import { assertExecutableNode, checkManifest, install, launcherScript, stableNodePath, uninstall } from '../src/install.js';
 
 test('install writes an executable launcher and a valid manifest into --target-dir', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-install-'));
@@ -80,4 +82,30 @@ test('install bakes nodePath into the launcher', () => {
   process.env.AGENT_TABS_HOME = path.join(tmp, 'home');
   const res = install({ targetDirs: [path.join(tmp, 'NMH')], nodePath: '/custom/bin/node' });
   assert.ok(fs.readFileSync(res.launcher, 'utf8').includes(`exec '/custom/bin/node' `));
+});
+
+test('install --node fails clearly when PATH is missing, not a file, or not executable', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-node-'));
+  const missing = path.join(tmp, 'nope/node');
+  const notExec = path.join(tmp, 'node-noexec');
+  fs.writeFileSync(notExec, '');
+  fs.chmodSync(notExec, 0o644);
+
+  assert.throws(() => assertExecutableNode(missing), /--node .*nope\/node: no such file/);
+  assert.throws(() => assertExecutableNode(tmp), /not a regular file/);
+  assert.throws(() => assertExecutableNode(notExec), /node-noexec: not executable/);
+  assert.equal(assertExecutableNode(process.execPath), process.execPath);
+
+  const cli = fileURLToPath(new URL('../bin/agent-tabs.js', import.meta.url));
+  const env = { ...process.env, AGENT_TABS_HOME: path.join(tmp, 'home') };
+  for (const [arg, re] of [[missing, /no such file/], [notExec, /not executable/]]) {
+    const r = spawnSync(process.execPath, [cli, 'install', '--node', arg, '--target-dir', path.join(tmp, 'NMH')], { env, encoding: 'utf8' });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /^agent-tabs: --node /);
+    assert.match(r.stderr, re);
+    assert.equal(fs.existsSync(path.join(tmp, 'home')), false, 'nothing written on failure');
+  }
+
+  const ok = spawnSync(process.execPath, [cli, 'install', '--node', process.execPath, '--target-dir', path.join(tmp, 'NMH')], { env, encoding: 'utf8' });
+  assert.equal(ok.status, 0, ok.stderr);
 });
